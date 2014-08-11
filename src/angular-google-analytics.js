@@ -16,7 +16,8 @@ angular.module('angular-google-analytics', [])
             enhancedLinkAttribution = false,
             removeRegExp,
             experimentId,
-            ignoreFirstPageLoad = false;
+            ignoreFirstPageLoad = false,
+            displayFeatures = true;
 
           this._logs = [];
 
@@ -82,6 +83,10 @@ angular.module('angular-google-analytics', [])
             ignoreFirstPageLoad = !!val;
           };
 
+          this.ignoreDisplayFeatures = function (val) {
+            displayFeatures = !!val;
+          };
+
         // public service
         this.$get = ['$document', '$rootScope', '$location', '$window', function($document, $rootScope, $location, $window) {
           var getUrl = function () {
@@ -113,7 +118,11 @@ angular.module('angular-google-analytics', [])
             (function() {
               var document = $document[0];
               var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-              ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+              if (displayFeatures) {
+                ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+              } else {
+                ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+              }
               var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
             })();
             created = true;
@@ -129,6 +138,10 @@ angular.module('angular-google-analytics', [])
             })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
             $window.ga('create', accountId, cookieConfig);
+
+            if (displayFeatures) {
+              $window.ga('require', 'displayfeatures');
+            }
 
             if (trackRoutes && !ignoreFirstPageLoad) {
               $window.ga('send', 'pageview', getUrl());
@@ -149,7 +162,6 @@ angular.module('angular-google-analytics', [])
               }
 
             }
-
           }
           this._log = function() {
             // for testing
