@@ -1,7 +1,7 @@
 /**
  * Angular Google Analytics - Easy tracking for your AngularJS application
- * @version v0.0.3 - 2014-06-05
- * @link http://revolunet.com.github.com/angular-google-analytics
+ * @version v0.0.4 - 2014-08-11
+ * @link http://github.com/Medycation/angular-google-analytics
  * @author Julien Bouquillon <julien@revolunet.com>
  * @license MIT License, http://www.opensource.org/licenses/MIT
  */
@@ -23,7 +23,8 @@ angular.module('angular-google-analytics', [])
             enhancedLinkAttribution = false,
             removeRegExp,
             experimentId,
-            ignoreFirstPageLoad = false;
+            ignoreFirstPageLoad = false,
+            displayFeatures = true;
 
           this._logs = [];
 
@@ -89,6 +90,10 @@ angular.module('angular-google-analytics', [])
             ignoreFirstPageLoad = !!val;
           };
 
+          this.ignoreDisplayFeatures = function (val) {
+            displayFeatures = !!val;
+          };
+
         // public service
         this.$get = ['$document', '$rootScope', '$location', '$window', function($document, $rootScope, $location, $window) {
           var getUrl = function () {
@@ -120,7 +125,11 @@ angular.module('angular-google-analytics', [])
             (function() {
               var document = $document[0];
               var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-              ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+              if (displayFeatures) {
+                ga.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'stats.g.doubleclick.net/dc.js';
+              } else {
+                ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+              }
               var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
             })();
             created = true;
@@ -136,6 +145,10 @@ angular.module('angular-google-analytics', [])
             })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
             $window.ga('create', accountId, cookieConfig);
+
+            if (displayFeatures) {
+              $window.ga('require', 'displayfeatures');
+            }
 
             if (trackRoutes && !ignoreFirstPageLoad) {
               $window.ga('send', 'pageview', getUrl());
@@ -156,7 +169,6 @@ angular.module('angular-google-analytics', [])
               }
 
             }
-
           }
           this._log = function() {
             // for testing
@@ -299,6 +311,22 @@ angular.module('angular-google-analytics', [])
             }
           };
 
+          /**
+           * Set custom dimensions, metrics or experiment
+           * https://developers.google.com/analytics/devguides/collection/analyticsjs/custom-dims-mets
+           * https://developers.google.com/analytics/devguides/collection/analyticsjs/field-reference#customs
+           *
+           * @param name
+           * @param value
+           * @private
+           */
+          this._set = function (name, value) {
+            if ($window.ga) {
+              $window.ga('set', name, value);
+              this._log('set', name, value);
+            }
+          };
+
 
 
             // creates the ganalytics tracker
@@ -346,6 +374,9 @@ angular.module('angular-google-analytics', [])
                 },
                 send: function (obj) {
                   me._send(obj);
+                },
+                set: function (name, value) {
+                  me._set(name, value);
                 }
             };
         }];
